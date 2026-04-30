@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Next Japan - Management</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        body { background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 100%; overflow-x: auto; }
+        .company-header { background: linear-gradient(135deg, #1e2a3a, #0f1a24); color: white; padding: 20px 25px; border-radius: 24px; margin-bottom: 25px; }
+        .company-name { font-size: 2rem; font-weight: bold; margin-bottom: 8px; }
+        .company-details { display: flex; flex-wrap: wrap; gap: 20px; font-size: 0.9rem; opacity: 0.9; }
+        .company-details span { background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 40px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 25px; flex-wrap: wrap; }
+        .tab-btn { background: white; border: none; padding: 12px 28px; border-radius: 40px; font-weight: 600; cursor: pointer; }
+        .tab-btn.active { background: #1e2a3a; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stats { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 30px; }
+        .stat-card { background: white; flex: 1; min-width: 160px; padding: 18px 16px; border-radius: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-label { font-size: 0.85rem; text-transform: uppercase; color: #5a6e7c; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: #1e2a3a; }
+        .search-bar { background: white; padding: 15px 20px; border-radius: 60px; display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; align-items: center; }
+        .search-input { flex: 3; min-width: 180px; padding: 12px 18px; border: 1px solid #ccc; border-radius: 40px; }
+        .btn { padding: 10px 20px; border-radius: 40px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: #0f2b3b; color: white; }
+        .btn-success { background: #2b6e4e; color: white; }
+        .btn-warning { background: #e67e22; color: white; }
+        .btn-danger { background: #b23c1c; color: white; }
+        .btn-outline { background: #f0f2f5; border: 1px solid #bdc4cc; }
+        .add-car-btn { background: #1e6f5c; color: white; margin-left: auto; }
+        .table-wrapper { overflow-x: auto; background: white; border-radius: 24px; padding: 4px 0; }
+        table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid #edf2f7; text-align: left; white-space: nowrap; }
+        th { background: #f8fafc; position: sticky; top: 0; }
+        .badge { padding: 4px 12px; border-radius: 40px; font-size: 0.75rem; font-weight: 600; }
+        .badge-sold { background: #ffedd5; color: #9b4a1a; }
+        .badge-available { background: #dcfce7; color: #15803d; }
+        .profit-positive { color: #2b6e4e; font-weight: bold; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; max-width: 800px; width: 95%; max-height: 90%; overflow-y: auto; border-radius: 32px; padding: 24px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 28px; }
+        .flex-btns { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+        .report-summary { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+        .report-card { text-align: center; flex: 1; }
+        .report-number { font-size: 2.2rem; font-weight: 800; }
+        footer { margin-top: 30px; text-align: center; font-size: 0.7rem; color: #6c7a89; }
+        .small-btn { padding: 4px 10px; font-size: 0.7rem; margin: 0 2px; }
+        .login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1e2a3a; display: flex; align-items: center; justify-content: center;
+            z-index: 2000;
+        }
+        .login-card {
+            background: white; padding: 40px; border-radius: 48px; width: 90%; max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center;
+        }
+        .login-card input { width: 100%; padding: 14px; margin: 12px 0; border: 1px solid #ccc; border-radius: 40px; font-size: 1rem; }
+        .login-card h2 { margin-bottom: 20px; color: #1e2a3a; }
+        .error-msg { color: #b23c1c; margin-top: 10px; font-size: 0.9rem; }
+        @media print { body * { visibility: hidden; } .modal, .modal * { visibility: visible; } .modal { position: absolute; top: 0; left: 0; width: 100%; background: white; } .no-print { display: none; } }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY (hardcoded credentials) -->
+<div id="loginOverlay">
+    <div class="login-card">
+        <h2>Next Japan</h2>
+        <p>Enter credentials to access</p>
+        <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+        <button id="loginBtn" class="btn btn-primary" style="width:100%;">Login</button>
+        <div id="loginError" class="error-msg"></div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none;">
+<div class="container">
+    <div class="company-header">
+        <div class="company-name">Next Japan</div>
+        <div class="company-details">
+            <span>📍 1 Chome-102 Harutano, Minato Ward, Nagoya, Aichi 455-0873</span>
+            <span>📞 09014230111</span>
+            <span>✉️ Sami.abaxi.sa@gmail.com</span>
+            <span>💴 JPY (¥)</span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="inventory">🚗 Inventory</button>
+        <button class="tab-btn" data-tab="expenses">💰 Expenses</button>
+        <button class="tab-btn" data-tab="invoices">🧾 Invoices</button>
+        <button class="tab-btn" data-tab="reports">📊 Reports</button>
+    </div>
+
+    <!-- INVENTORY TAB (same structure as before) -->
+    <div id="inventory" class="tab-content active">
+        <div class="stats">
+            <div class="stat-card"><div class="stat-label">Total Cars</div><div class="stat-value" id="totalCarsCount">0</div></div>
+            <div class="stat-card"><div class="stat-label">Available</div><div class="stat-value" id="availableCount">0</div></div>
+            <div class="stat-card"><div class="stat-label">Sold</div><div class="stat-value" id="soldCount">0</div></div>
+            <div class="stat-card"><div class="stat-label">Total Profit (¥)</div><div class="stat-value" id="totalProfit">0</div></div>
+        </div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search any field...">
+            <button class="btn btn-outline" id="clearSearchBtn">Clear</button>
+            <button class="btn btn-primary add-car-btn" id="openAddModalBtn">+ Add Car</button>
+        </div>
+        <div class="table-wrapper">
+            <table id="carsTable"><thead id="carsTableHead"></thead><tbody id="carsTableBody"></tbody></table>
+        </div>
+    </div>
+
+    <!-- EXPENSES TAB -->
+    <div id="expenses" class="tab-content">
+        <div style="margin-bottom:20px; display:flex; gap:12px;">
+            <button class="btn btn-primary" id="addExpenseBtn">+ Add Expense</button>
+            <input type="text" id="expenseSearch" class="search-input" placeholder="Search expense">
+            <button class="btn btn-outline" id="clearExpenseFilterBtn">Clear</button>
+        </div>
+        <div class="table-wrapper">
+            <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount (¥)</th><th>Actions</th></tr></thead><tbody id="expensesTableBody"></tbody></table>
+        </div>
+    </div>
+
+    <!-- INVOICES TAB -->
+    <div id="invoices" class="tab-content">
+        <div class="stats"><div class="stat-card"><div class="stat-label">Total Sold Cars</div><div class="stat-value" id="totalSoldInvoices">0</div></div></div>
+        <div class="table-wrapper">
+            <table><thead><tr><th>Date Sold</th><th>Make/Model</th><th>VIN</th><th>Buyer</th><th>Sell Price (¥)</th><th>Action</th></tr></thead><tbody id="invoicesTableBody"></tbody></table>
+        </div>
+    </div>
+
+    <!-- REPORTS TAB (with backup button) -->
+    <div id="reports" class="tab-content">
+        <div class="report-summary">
+            <div class="report-card"><div class="report-label">💰 Car Profit</div><div class="report-number" id="reportCarProfit">¥0</div></div>
+            <div class="report-card"><div class="report-label">📉 Expenses</div><div class="report-number" id="reportTotalExpenses">¥0</div></div>
+            <div class="report-card"><div class="report-label">📈 Net Profit</div><div class="report-number" id="reportNetProfit">¥0</div></div>
+        </div>
+        <div style="text-align: center; margin: 20px 0;">
+            <button id="backupBtn" class="btn btn-success" style="background:#2b6e4e;">⬇️ Download Backup (CSV)</button>
+        </div>
+        <canvas id="trendChart" width="400" height="200" style="max-width:100%; background:white; border-radius:16px; padding:10px;"></canvas>
+        <canvas id="categoryChart" width="400" height="200" style="max-width:100%; margin-top:20px; background:white; border-radius:16px; padding:10px;"></canvas>
+    </div>
+    <footer>Next Japan - Real‑time management with backup</footer>
+</div>
+
+<!-- Modals (same as before) -->
+<div id="carModal" class="modal"><div class="modal-content"><h3 id="modalTitle">Add/Edit Car</h3>
+    <div class="form-grid">
+        <input type="text" id="carMakeModel" placeholder="Make & Model *">
+        <input type="text" id="carYear" placeholder="Year *">
+        <input type="text" id="carVin" placeholder="VIN *">
+        <input type="text" id="carVehicleNo" placeholder="Vehicle Number">
+        <input type="date" id="carDate" placeholder="Auction Date">
+        <input type="text" id="carAuction" placeholder="Auction">
+        <input type="text" id="carExhibitionNo" placeholder="Exhibition number">
+        <input type="text" id="carGrade" placeholder="Grade (e.g., 4, 4.5, S)">
+        <input type="number" id="carVehicleAmount" placeholder="Vehicle amount (¥)">
+        <input type="number" id="carBidFee" placeholder="Successful bid fee (¥)">
+        <input type="number" id="carRecycling" placeholder="Recycling (¥)">
+        <input type="number" id="carConsumptionTax" placeholder="Consumption tax (¥)">
+        <input type="number" id="carLandTransport" placeholder="Land transportation fee (¥)">
+        <input type="number" id="carAutoTax" placeholder="Automobile tax etc. (¥)">
+        <input type="text" id="carBuyPlace" placeholder="Buy place">
+        <input type="text" id="carSellPlace" placeholder="Sell place">
+        <input type="number" id="carCost" placeholder="Cost Price (¥) *">
+        <input type="number" id="carSellPrice" placeholder="Sell Price (¥)">
+        <input type="text" id="carBuyer" placeholder="Buyer name">
+    </div>
+    <div class="flex-btns"><button class="btn btn-outline" id="closeModalBtn">Cancel</button><button class="btn btn-primary" id="saveCarBtn">Save</button></div>
+</div></div>
+
+<div id="invoiceModal" class="modal"><div class="modal-content" style="max-width:700px;"><div id="invoiceContent"></div><div class="flex-btns no-print"><button class="btn btn-outline" id="closeInvoiceBtn">Close</button><button class="btn btn-primary" id="printInvoiceBtn">Print / PDF</button></div></div></div>
+
+<div id="expenseModal" class="modal"><div class="modal-content"><h3>Add Expense</h3><input type="date" id="expenseDate"><input type="text" id="expenseDesc" placeholder="Description"><select id="expenseCat"><option>Rent</option><option>Repairs</option><option>Marketing</option><option>Salaries</option><option>Other</option></select><input type="number" id="expenseAmount" placeholder="Amount (¥)"><div class="flex-btns"><button class="btn btn-outline" id="closeExpenseModalBtn">Cancel</button><button class="btn btn-primary" id="saveExpenseBtn">Save</button></div></div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+    // ========== UPDATED HARDCODED LOGIN CREDENTIALS ==========
+    const VALID_EMAIL = "maazali@nextJapan.com";
+    const VALID_PASSWORD = "NextJapan123";
+
+    // ========== FIREBASE CONFIG (from your screenshot) ==========
+    const firebaseConfig = {
+        apiKey: "AIzaSyBo5Xjgh8X0c-NAIjqm3rFDZdOkarP9i4",
+        authDomain: "next-japan-d93e3.firebaseapp.com",
+        projectId: "next-japan-d93e3",
+        storageBucket: "next-japan-d93e3.firebasestorage.app",
+        messagingSenderId: "381439502281",
+        appId: "1:381439502281:web:ea3ab058a8997e01dbea18"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let cars = [], expenses = [];
+    let profitChart = null, categoryChart = null;
+    let editMode = false, editCarId = null;
+    let currentSearch = "", expenseSearchTerm = "";
+    const columns = ["Make/Model","Year","VIN","Vehicle No","Auction Date","Auction","Exhibition No","Grade","Vehicle Amt","Bid Fee","Recycling","Consumption Tax","Land Transp","Auto Tax","Buy Place","Sell Place","Cost (¥)","Sell (¥)","Status","Buyer","Profit","Actions"];
+
+    // Login handling
+    const overlay = document.getElementById('loginOverlay');
+    const mainApp = document.getElementById('mainApp');
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+
+    function checkLogin() {
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value;
+        if (email === VALID_EMAIL && password === VALID_PASSWORD) {
+            overlay.style.display = 'none';
+            mainApp.style.display = 'block';
+            initApp();
+        } else {
+            loginError.innerText = 'Invalid email or password. Try again.';
+            loginPassword.value = '';
+        }
+    }
+    loginBtn.addEventListener('click', checkLogin);
+    loginPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkLogin(); });
+
+    // ---------- Firebase listeners and app logic (unchanged) ----------
+    function initApp() {
+        db.collection("cars").onSnapshot(snapshot => {
+            cars = [];
+            snapshot.forEach(doc => {
+                let c = doc.data();
+                c.id = doc.id;
+                for (let k of ["vehicleAmount","bidFee","recycling","consumptionTax","landTransport","autoTax","cost","sellPrice","profit"]) {
+                    if (c[k] === undefined) c[k] = 0;
+                    else c[k] = parseFloat(c[k]);
+                }
+                cars.push(c);
+            });
+            normalizeCars();
+            renderInventory();
+            renderReports();
+            renderInvoicesList();
+        });
+
+        db.collection("expenses").onSnapshot(snapshot => {
+            expenses = [];
+            snapshot.forEach(doc => {
+                let e = doc.data();
+                e.id = doc.id;
+                e.amount = parseFloat(e.amount) || 0;
+                expenses.push(e);
+            });
+            renderExpenses();
+            renderReports();
+        });
+        attachGlobalListeners();
+    }
+
+    function normalizeCars() {
+        const defaults = { vehicleNo:"", date:"", auction:"", exhibitionNo:"", grade:"", vehicleAmount:0, bidFee:0, recycling:0, consumptionTax:0, landTransport:0, autoTax:0, buyPlace:"", sellPlace:"", saleDate:"" };
+        for (let c of cars) {
+            for (let k in defaults) if (c[k] === undefined) c[k] = defaults[k];
+            if (c.sellPrice && c.sellPrice > 0 && c.buyer) {
+                c.status = "sold";
+                c.profit = c.sellPrice - c.cost;
+            } else {
+                c.status = "available";
+                c.sellPrice = 0;
+                c.buyer = "";
+                c.profit = 0;
+                c.saleDate = "";
+            }
+        }
+    }
+
+    async function saveCarToFirestore(carData, isEdit, oldId) {
+        const data = { ...carData };
+        delete data.id;
+        if (isEdit && oldId) await db.collection("cars").doc(oldId).set(data);
+        else await db.collection("cars").add(data);
+    }
+    async function deleteCarFromFirestore(carId) { await db.collection("cars").doc(carId).delete(); }
+    async function saveExpenseToFirestore(expenseData, isEdit, expId) {
+        const data = { ...expenseData };
+        delete data.id;
+        if (isEdit && expId) await db.collection("expenses").doc(expId).set(data);
+        else await db.collection("expenses").add(data);
+    }
+    async function deleteExpenseFromFirestore(expId) { await db.collection("expenses").doc(expId).delete(); }
+
+    // Backup function
+    function downloadCSV(data, filename) {
+        if (data.length === 0) {
+            alert(`No ${filename} data to export.`);
+            return;
+        }
+        const csvRows = [];
+        const headers = Object.keys(data[0]);
+        csvRows.push(headers.join(','));
+        for (const row of data) {
+            const values = headers.map(header => {
+                const val = row[header] === undefined ? '' : row[header];
+                return `"${String(val).replace(/"/g, '""')}"`;
+            });
+            csvRows.push(values.join(','));
+        }
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function backupData() {
+        if (cars.length === 0 && expenses.length === 0) {
+            alert('No data to backup yet.');
+            return;
+        }
+        const carsForExport = cars.map(c => ({
+            id: c.id,
+            makeModel: c.makeModel,
+            year: c.year,
+            vin: c.vin,
+            vehicleNo: c.vehicleNo,
+            date: c.date,
+            auction: c.auction,
+            exhibitionNo: c.exhibitionNo,
+            grade: c.grade,
+            vehicleAmount: c.vehicleAmount,
+            bidFee: c.bidFee,
+            recycling: c.recycling,
+            consumptionTax: c.consumptionTax,
+            landTransport: c.landTransport,
+            autoTax: c.autoTax,
+            buyPlace: c.buyPlace,
+            sellPlace: c.sellPlace,
+            cost: c.cost,
+            sellPrice: c.sellPrice,
+            buyer: c.buyer,
+            status: c.status,
+            profit: c.profit,
+            saleDate: c.saleDate
+        }));
+        const expensesForExport = expenses.map(e => ({
+            id: e.id,
+            date: e.date,
+            desc: e.desc,
+            category: e.category,
+            amount: e.amount
+        }));
+        downloadCSV(carsForExport, 'cars_backup');
+        setTimeout(() => downloadCSV(expensesForExport, 'expenses_backup'), 500);
+    }
+
+    // ---------- Render functions (same as before) ----------
+    function renderInventory() {
+        const term = currentSearch.toLowerCase();
+        let filtered = cars.filter(c => JSON.stringify(c).toLowerCase().includes(term));
+        document.getElementById("carsTableHead").innerHTML = `<table>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
+        const tbody = document.getElementById("carsTableBody");
+        if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="${columns.length}">No cars found</td></tr>`; updateStats(); return; }
+        let html = "";
+        for (let c of filtered) {
+            const statusBadge = c.status === "sold" ? `<span class="badge badge-sold">SOLD</span>` : `<span class="badge badge-available">AVAILABLE</span>`;
+            const profitShow = c.status === "sold" ? `<span class="profit-positive">¥${c.profit.toLocaleString('ja-JP')}</span>` : "—";
+            let actions = `<button class="btn small-btn btn-warning" data-id="${c.id}" data-action="edit">Edit</button>
+                           ${c.status === "available" ? `<button class="btn small-btn btn-success" data-id="${c.id}" data-action="sell">Sell</button>` : `<button class="btn small-btn btn-outline" disabled>Sold</button>`}
+                           <button class="btn small-btn btn-danger" data-id="${c.id}" data-action="delete">Del</button>`;
+            if (c.status === "sold") actions += `<button class="btn small-btn btn-primary" data-id="${c.id}" data-action="invoice">Invoice</button>`;
+            html += `<tr>
+                        <td>${escapeHtml(c.makeModel)}</td>
+                        <td>${escapeHtml(c.year)}</td>
+                        <td>${escapeHtml(c.vin)}</td>
+                        <td>${escapeHtml(c.vehicleNo)}</td>
+                        <td>${c.date || "—"}</td>
+                        <td>${escapeHtml(c.auction)}</td>
+                        <td>${escapeHtml(c.exhibitionNo)}</td>
+                        <td>${escapeHtml(c.grade)}</td>
+                        <td>${c.vehicleAmount ? `¥${c.vehicleAmount.toLocaleString('ja-JP')}` : "—"}</td>
+                        <td>${c.bidFee ? `¥${c.bidFee.toLocaleString('ja-JP')}` : "—"}</td>
+                        <td>${c.recycling ? `¥${c.recycling.toLocaleString('ja-JP')}` : "—"}</td>
+                        <td>${c.consumptionTax ? `¥${c.consumptionTax.toLocaleString('ja-JP')}` : "—"}</td>
+                        <td>${c.landTransport ? `¥${c.landTransport.toLocaleString('ja-JP')}` : "—"}</td>
+                        <td>${c.autoTax ? `¥${c.autoTax.toLocaleString('ja-JP')}` : "—"}</td>
+                        <td>${escapeHtml(c.buyPlace)}</td>
+                        <td>${escapeHtml(c.sellPlace)}</td>
+                        <td>¥${c.cost.toLocaleString('ja-JP')}</td>
+                        <td>${c.sellPrice ? `¥${c.sellPrice.toLocaleString('ja-JP')}` : "—"}</td>
+                        <td>${statusBadge}</td>
+                        <td>${escapeHtml(c.buyer || "—")}</td>
+                        <td>${profitShow}</td>
+                        <td class="action-buttons">${actions}</td>
+                     </tr>`;
+        }
+        tbody.innerHTML = html;
+        attachInventoryEvents();
+        updateStats();
+    }
+
+    function attachInventoryEvents() {
+        document.querySelectorAll("[data-action='edit']").forEach(btn => btn.onclick = () => openEditModal(btn.dataset.id));
+        document.querySelectorAll("[data-action='sell']").forEach(btn => btn.onclick = () => openSellModal(btn.dataset.id));
+        document.querySelectorAll("[data-action='delete']").forEach(btn => btn.onclick = () => { if(confirm("Delete?")) deleteCarFromFirestore(btn.dataset.id); });
+        document.querySelectorAll("[data-action='invoice']").forEach(btn => btn.onclick = () => showInvoice(btn.dataset.id));
+    }
+
+    function updateStats() {
+        const total = cars.length, avail = cars.filter(c => c.status === "available").length, sold = cars.filter(c => c.status === "sold").length, totalProfit = cars.reduce((s,c) => s + (c.profit>0?c.profit:0), 0);
+        document.getElementById("totalCarsCount").innerText = total;
+        document.getElementById("availableCount").innerText = avail;
+        document.getElementById("soldCount").innerText = sold;
+        document.getElementById("totalProfit").innerText = totalProfit.toLocaleString('ja-JP');
+    }
+
+    function renderExpenses() {
+        let filtered = expenses.filter(e => expenseSearchTerm === "" || e.desc.toLowerCase().includes(expenseSearchTerm));
+        const tbody = document.getElementById("expensesTableBody");
+        if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="5">No expenses found. Click + Add Expense to create one.</td></tr>`; return; }
+        let html = "";
+        for (let e of filtered) {
+            html += `<tr>
+                        <td>${e.date}</td>
+                        <td>${escapeHtml(e.desc)}</td>
+                        <td>${e.category}</td>
+                        <td>¥${e.amount.toLocaleString('ja-JP')}</td>
+                        <td><button class="btn small-btn btn-danger" data-expid="${e.id}" data-action="delExp">Delete</button></td>
+                     </tr>`;
+        }
+        tbody.innerHTML = html;
+        document.querySelectorAll("[data-action='delExp']").forEach(btn => btn.onclick = () => deleteExpenseFromFirestore(btn.dataset.expid));
+    }
+
+    function renderInvoicesList() {
+        const soldCars = cars.filter(c => c.status === "sold");
+        document.getElementById("totalSoldInvoices").innerText = soldCars.length;
+        const tbody = document.getElementById("invoicesTableBody");
+        if (soldCars.length === 0) { tbody.innerHTML = `<tr><td colspan="6">No sold cars</td></tr>`; return; }
+        let html = "";
+        for (let c of soldCars) {
+            html += `<tr>
+                        <td>${c.saleDate || "—"}</td>
+                        <td>${escapeHtml(c.makeModel)} (${escapeHtml(c.year)})</td>
+                        <td>${escapeHtml(c.vin)}</td>
+                        <td>${escapeHtml(c.buyer)}</td>
+                        <td>¥${c.sellPrice.toLocaleString('ja-JP')}</td>
+                        <td><button class="btn small-btn btn-primary" data-id="${c.id}" data-action="viewInvoice">View Invoice</button></td>
+                     </tr>`;
+        }
+        tbody.innerHTML = html;
+        document.querySelectorAll("[data-action='viewInvoice']").forEach(btn => btn.onclick = () => showInvoice(btn.dataset.id));
+    }
+
+    function showInvoice(carId) {
+        const car = cars.find(c => c.id === carId);
+        if (!car || car.status !== "sold") return;
+        const invoiceHtml = `<div class="invoice-container"><div class="invoice-header"><h2>Next Japan</h2><p>1 Chome-102 Harutano, Minato Ward, Nagoya, Aichi 455-0873<br>📞 09014230111 &nbsp; ✉️ Sami.abaxi.sa@gmail.com</p><h3>INVOICE</h3><p>Invoice No: ${car.id.slice(-8)}<br>Date: ${new Date().toLocaleDateString('ja-JP')}</p></div><div class="invoice-details"><p><strong>Bill to:</strong> ${escapeHtml(car.buyer)}</p><p><strong>Vehicle:</strong> ${escapeHtml(car.makeModel)} (${escapeHtml(car.year)})</p><p><strong>VIN:</strong> ${escapeHtml(car.vin)} &nbsp; | &nbsp; <strong>Vehicle No:</strong> ${escapeHtml(car.vehicleNo)}</p><p><strong>Sold Date:</strong> ${car.saleDate || "—"}</p></div><table class="invoice-items"><thead><tr><th>Description</th><th>Amount (¥)</th></tr></thead><tbody><tr><td>Selling Price</td><td>¥${car.sellPrice.toLocaleString('ja-JP')}</td></tr>${car.consumptionTax ? `<tr><td>Consumption Tax</td><td>¥${car.consumptionTax.toLocaleString('ja-JP')}</td></tr>` : ''}${car.recycling ? `<tr><td>Recycling Fee</td><td>¥${car.recycling.toLocaleString('ja-JP')}</td></tr>` : ''}${car.landTransport ? `<tr><td>Land Transportation</td><td>¥${car.landTransport.toLocaleString('ja-JP')}</td></tr>` : ''}${car.autoTax ? `<tr><td>Automobile Tax etc.</td><td>¥${car.autoTax.toLocaleString('ja-JP')}</td></tr>` : ''}</tbody></table><div class="invoice-total"><p>Total: ¥${car.sellPrice.toLocaleString('ja-JP')}</p></div><hr><p><em>Thank you for your business!</em></p></div>`;
+        document.getElementById("invoiceContent").innerHTML = invoiceHtml;
+        document.getElementById("invoiceModal").style.display = "flex";
+    }
+
+    function renderReports() {
+        const carProfit = cars.reduce((s,c) => s + (c.profit>0?c.profit:0), 0);
+        const totalExp = expenses.reduce((s,e) => s+e.amount, 0);
+        const net = carProfit - totalExp;
+        document.getElementById("reportCarProfit").innerHTML = `¥${carProfit.toLocaleString('ja-JP')}`;
+        document.getElementById("reportTotalExpenses").innerHTML = `¥${totalExp.toLocaleString('ja-JP')}`;
+        document.getElementById("reportNetProfit").innerHTML = `¥${net.toLocaleString('ja-JP')}`;
+        updateCharts();
+    }
+
+    function updateCharts() {
+        const last30 = [];
+        for (let i=29; i>=0; i--) { let d=new Date(); d.setDate(d.getDate()-i); last30.push(d.toISOString().slice(0,10)); }
+        let profitArr=new Array(30).fill(0), expArr=new Array(30).fill(0);
+        for (let e of expenses) { let idx=last30.indexOf(e.date); if(idx!==-1) expArr[idx]+=e.amount; }
+        for (let c of cars) { if(c.status==="sold" && c.saleDate) { let idx=last30.indexOf(c.saleDate); if(idx!==-1) profitArr[idx]+=c.profit; } }
+        const labels=last30.map(d=>d.slice(5));
+        const ctx=document.getElementById("trendChart").getContext("2d");
+        if(profitChart) profitChart.destroy();
+        profitChart = new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Car Profit (¥)',data:profitArr,borderColor:'#2b6e4e',fill:false},{label:'Expenses (¥)',data:expArr,borderColor:'#b23c1c',fill:false}]}});
+        const catMap=new Map(); expenses.forEach(e=>catMap.set(e.category,(catMap.get(e.category)||0)+e.amount));
+        const ctx2=document.getElementById("categoryChart").getContext("2d");
+        if(categoryChart) categoryChart.destroy();
+        categoryChart = new Chart(ctx2,{type:'pie',data:{labels:Array.from(catMap.keys()),datasets:[{data:Array.from(catMap.values()),backgroundColor:['#1e6f5c','#e9c46a','#f4a261','#e76f51','#8ecae6']}]}});
+    }
+
+    // Modal helpers
+    function fillModal(car) {
+        document.getElementById("carMakeModel").value = car.makeModel || "";
+        document.getElementById("carYear").value = car.year || "";
+        document.getElementById("carVin").value = car.vin || "";
+        document.getElementById("carVehicleNo").value = car.vehicleNo || "";
+        document.getElementById("carDate").value = car.date || "";
+        document.getElementById("carAuction").value = car.auction || "";
+        document.getElementById("carExhibitionNo").value = car.exhibitionNo || "";
+        document.getElementById("carGrade").value = car.grade || "";
+        document.getElementById("carVehicleAmount").value = car.vehicleAmount || "";
+        document.getElementById("carBidFee").value = car.bidFee || "";
+        document.getElementById("carRecycling").value = car.recycling || "";
+        document.getElementById("carConsumptionTax").value = car.consumptionTax || "";
+        document.getElementById("carLandTransport").value = car.landTransport || "";
+        document.getElementById("carAutoTax").value = car.autoTax || "";
+        document.getElementById("carBuyPlace").value = car.buyPlace || "";
+        document.getElementById("carSellPlace").value = car.sellPlace || "";
+        document.getElementById("carCost").value = car.cost || "";
+        document.getElementById("carSellPrice").value = car.sellPrice || "";
+        document.getElementById("carBuyer").value = car.buyer || "";
+    }
+
+    function openEditModal(carId) {
+        const car = cars.find(c => c.id === carId);
+        if (!car) return;
+        editMode = true; editCarId = carId;
+        fillModal(car);
+        document.getElementById("modalTitle").innerText = "Edit Car";
+        document.getElementById("carModal").style.display = "flex";
+    }
+
+    function openSellModal(carId) {
+        const car = cars.find(c => c.id === carId);
+        if (!car) return;
+        editMode = true; editCarId = carId;
+        fillModal(car);
+        document.getElementById("carSellPrice").value = "";
+        document.getElementById("carBuyer").value = "";
+        document.getElementById("modalTitle").innerText = "Sell Car (set sell price & buyer)";
+        document.getElementById("carModal").style.display = "flex";
+    }
+
+    async function saveCarFromModal() {
+        const makeModel = document.getElementById("carMakeModel").value.trim();
+        const year = document.getElementById("carYear").value.trim();
+        const vin = document.getElementById("carVin").value.trim();
+        if (!makeModel || !year || !vin) { alert("Make/Model, Year, VIN required"); return; }
+        const carData = {
+            makeModel, year, vin,
+            vehicleNo: document.getElementById("carVehicleNo").value.trim(),
+            date: document.getElementById("carDate").value,
+            auction: document.getElementById("carAuction").value.trim(),
+            exhibitionNo: document.getElementById("carExhibitionNo").value.trim(),
+            grade: document.getElementById("carGrade").value.trim(),
+            vehicleAmount: parseFloat(document.getElementById("carVehicleAmount").value) || 0,
+            bidFee: parseFloat(document.getElementById("carBidFee").value) || 0,
+            recycling: parseFloat(document.getElementById("carRecycling").value) || 0,
+            consumptionTax: parseFloat(document.getElementById("carConsumptionTax").value) || 0,
+            landTransport: parseFloat(document.getElementById("carLandTransport").value) || 0,
+            autoTax: parseFloat(document.getElementById("carAutoTax").value) || 0,
+            buyPlace: document.getElementById("carBuyPlace").value.trim(),
+            sellPlace: document.getElementById("carSellPlace").value.trim(),
+            cost: parseFloat(document.getElementById("carCost").value),
+            sellPrice: parseFloat(document.getElementById("carSellPrice").value) || 0,
+            buyer: document.getElementById("carBuyer").value.trim(),
+        };
+        if (isNaN(carData.cost) || carData.cost <= 0) { alert("Cost Price required"); return; }
+        if (editMode && editCarId) {
+            const oldCar = cars.find(c => c.id === editCarId);
+            if (carData.sellPrice > 0 && carData.buyer) {
+                carData.status = "sold";
+                carData.profit = carData.sellPrice - carData.cost;
+                carData.saleDate = oldCar?.saleDate || new Date().toISOString().slice(0,10);
+            } else {
+                carData.status = "available";
+                carData.sellPrice = 0;
+                carData.buyer = "";
+                carData.profit = 0;
+                carData.saleDate = "";
+            }
+            await saveCarToFirestore(carData, true, editCarId);
+        } else {
+            if (carData.sellPrice > 0 && carData.buyer) {
+                carData.status = "sold";
+                carData.profit = carData.sellPrice - carData.cost;
+                carData.saleDate = new Date().toISOString().slice(0,10);
+            } else {
+                carData.status = "available";
+                carData.sellPrice = 0;
+                carData.buyer = "";
+                carData.profit = 0;
+                carData.saleDate = "";
+            }
+            await saveCarToFirestore(carData, false);
+        }
+        closeModal();
+    }
+
+    async function saveExpenseModal() {
+        const date = document.getElementById("expenseDate").value;
+        const desc = document.getElementById("expenseDesc").value.trim();
+        const cat = document.getElementById("expenseCat").value;
+        const amt = parseFloat(document.getElementById("expenseAmount").value);
+        if (!date || !desc || isNaN(amt) || amt <= 0) { alert("Fill all fields"); return; }
+        await saveExpenseToFirestore({ date, desc, category: cat, amount: amt }, false);
+        document.getElementById("expenseModal").style.display = "none";
+        document.getElementById("expenseDesc").value = "";
+        document.getElementById("expenseAmount").value = "";
+    }
+
+    function closeModal() { document.getElementById("carModal").style.display = "none"; editMode = false; editCarId = null; }
+    function closeExpModal() { document.getElementById("expenseModal").style.display = "none"; }
+    function closeInvoiceModal() { document.getElementById("invoiceModal").style.display = "none"; }
+    function printInvoice() { window.print(); }
+    function escapeHtml(s) { if (!s) return ""; return s.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+
+    function attachGlobalListeners() {
+        document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+            document.getElementById(btn.dataset.tab).classList.add("active");
+            if (btn.dataset.tab === "reports") renderReports();
+            if (btn.dataset.tab === "expenses") renderExpenses();
+            if (btn.dataset.tab === "invoices") renderInvoicesList();
+        }));
+
+        document.getElementById("openAddModalBtn").onclick = () => { editMode=false; editCarId=null; fillModal({}); document.getElementById("modalTitle").innerText="Add New Car"; document.getElementById("carModal").style.display="flex"; };
+        document.getElementById("saveCarBtn").onclick = saveCarFromModal;
+        document.getElementById("closeModalBtn").onclick = closeModal;
+        document.getElementById("addExpenseBtn").onclick = () => { document.getElementById("expenseModal").style.display="flex"; document.getElementById("expenseDate").valueAsDate=new Date(); };
+        document.getElementById("saveExpenseBtn").onclick = saveExpenseModal;
+        document.getElementById("closeExpenseModalBtn").onclick = closeExpModal;
+        document.getElementById("searchInput").oninput = e => { currentSearch = e.target.value; renderInventory(); };
+        document.getElementById("clearSearchBtn").onclick = () => { document.getElementById("searchInput").value=""; currentSearch=""; renderInventory(); };
+        document.getElementById("expenseSearch").oninput = e => { expenseSearchTerm = e.target.value; renderExpenses(); };
+        document.getElementById("clearExpenseFilterBtn").onclick = () => { document.getElementById("expenseSearch").value=""; expenseSearchTerm=""; renderExpenses(); };
+        document.getElementById("closeInvoiceBtn").onclick = closeInvoiceModal;
+        document.getElementById("printInvoiceBtn").onclick = printInvoice;
+        document.getElementById("backupBtn").addEventListener("click", backupData);
+        window.onclick = e => { if (e.target.classList.contains("modal")) { closeModal(); closeExpModal(); closeInvoiceModal(); } };
+    }
+</script>
+</body>
+</html>
